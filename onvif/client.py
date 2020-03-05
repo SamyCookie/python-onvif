@@ -86,7 +86,7 @@ class ONVIFService:
     """
     @safeFunc
     def __init__(self, xaddr, wsse: UsernameDigestTokenDtDiff, url: Path, *,
-                 binding_name='', transport=None):
+                 bindingName='', transport=None):
         if not url.is_file():
             raise ONVIFError('%s doesn`t exist!' % url)
         
@@ -97,13 +97,13 @@ class ONVIFService:
             transport = AsyncTransport(None)
         self.client = Client(wsdl=str(url), wsse=wsse, transport=transport,
                              settings=Settings(strict=False, xml_huge_tree=True))
-        self.wsClient = self.client.create_service(binding_name, xaddr)
-        self.bindingName = binding_name
+        self.wsClient = self.client.create_service(bindingName, xaddr)
+        self.bindingName = bindingName
     
     def createType(self, name):
         """ create type
         """
-        bindingName = self.binding_name
+        bindingName = self.bindingName
         namespace = bindingName[bindingName.find('{')+1:bindingName.find('}')]
         client = self.client
         availableNs = client.namespaces
@@ -301,5 +301,5 @@ class ONVIFCamera:
                 transport = self.transport
             self.services[name] = service = \
                 ONVIFService(xaddr, self.wsse, self.wsdlDir/wsdlFilename,
-                             binding_name=bindingName, transport=transport)
+                             bindingName=bindingName, transport=transport)
         return service
