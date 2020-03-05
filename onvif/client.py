@@ -6,8 +6,7 @@ from os import environ, path
 from threading import RLock
 
 from zeep.asyncio import AsyncTransport
-from zeep.cache import SqliteCache
-from zeep.client import Client, CachingClient, Settings
+from zeep.client import Client, Settings
 from zeep.wsse.username import UsernameToken
 import zeep.helpers
 
@@ -84,8 +83,8 @@ class ONVIFService:
     """
     @safe_func
     def __init__(self, xaddr, user, passwd, url,
-                 encrypt=True, zeep_client=None, no_cache=False,
-                 portType=None, dt_diff=None, binding_name='', transport=None):
+                 encrypt=True, zeep_client=None, portType=None,
+                 dt_diff=None, binding_name='', transport=None):
         if not path.isfile(url):
             raise ONVIFError('%s doesn`t exist!' % url)
         
@@ -95,12 +94,11 @@ class ONVIFService:
         # Create soap client
         if not zeep_client:
             if not transport:
-                transport = AsyncTransport(None) if no_cache else AsyncTransport(None, cache=SqliteCache())
-            ClientType = Client if no_cache else CachingClient
+                transport = AsyncTransport(None)
             settings = Settings()
             settings.strict = False
             settings.xml_huge_tree = True
-            self.zeep_client = ClientType(wsdl=url, wsse=wsse, transport=transport, settings=settings)
+            self.zeep_client = Client(wsdl=url, wsse=wsse, transport=transport, settings=settings)
         else:
             self.zeep_client = zeep_client
         self.ws_client = self.zeep_client.create_service(binding_name, self.xaddr)
@@ -187,7 +185,7 @@ class ONVIFCamera:
     
     def __init__(self, host, port, user, passwd,
                  wsdl_dir=path.join(path.dirname(path.dirname(__file__)), 'wsdl'),
-                 encrypt=True, no_cache=False, adjust_time=False, transport=None):
+                 encrypt=True, adjust_time=False, transport=None):
         environ.pop('http_proxy', None)
         environ.pop('https_proxy', None)
         self.host = host
@@ -196,7 +194,6 @@ class ONVIFCamera:
         self.passwd = passwd
         self.wsdl_dir = wsdl_dir
         self.encrypt = encrypt
-        self.no_cache = no_cache
         self.adjust_time = adjust_time
         self.transport = transport
         self.dt_diff = None
@@ -314,7 +311,6 @@ class ONVIFCamera:
                 transport = self.transport
             service = ONVIFService(xaddr, self.user, self.passwd,
                                    wsdlFile, self.encrypt,
-                                   no_cache=self.no_cache,
                                    portType=portType,
                                    dt_diff=self.dt_diff,
                                    binding_name=bindingName,
