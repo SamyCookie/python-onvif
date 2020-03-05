@@ -103,15 +103,7 @@ class ONVIFService:
             Client(wsdl=str(url), wsse=wsse, transport=transport, settings=settings)
         self.ws_client = client.create_service(binding_name, self.xaddr)
         self.bindingName = binding_name
-        
-        # Set soap header for authentication
-        self.user = user
-        self.passwd = passwd
-        # Indicate wether password digest is needed
-        self.encrypt = encrypt
-        self.dt_diff = dt_diff
-        
-        
+    
     def createType(self, name):
         """ create type
         """
