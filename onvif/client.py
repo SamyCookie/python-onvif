@@ -2,7 +2,8 @@
 """
 import logging
 from datetime import datetime
-from os import environ, path
+from os import environ
+from pathlib import Path
 from threading import RLock
 
 from zeep.asyncio import AsyncTransport
@@ -84,9 +85,9 @@ class ONVIFService:
         device_service.SetHostname(params)
     """
     @safeFunc
-    def __init__(self, xaddr, user, passwd, url, *,
+    def __init__(self, xaddr, user, passwd, url: Path, *,
                  encrypt=True, dt_diff=None, binding_name='', transport=None):
-        if not path.isfile(url):
+        if not url.is_file():
             raise ONVIFError('%s doesn`t exist!' % url)
         
         self.url = url
@@ -99,7 +100,7 @@ class ONVIFService:
         settings.strict = False
         settings.xml_huge_tree = True
         self.zeep_client = zeep_client = \
-            Client(wsdl=url, wsse=wsse, transport=transport, settings=settings)
+            Client(wsdl=str(url), wsse=wsse, transport=transport, settings=settings)
         self.ws_client = zeep_client.create_service(binding_name, self.xaddr)
         
         # Set soap header for authentication
@@ -183,7 +184,7 @@ class ONVIFCamera:
     PullPointSubscription = 'http://www.onvif.org/ver10/events/wsdl/PullPointSubscription'
     
     def __init__(self, host, port, user, passwd,
-                 wsdl_dir=path.join(path.dirname(path.dirname(__file__)), 'wsdl'),
+                 wsdlDir: Path=Path(__file__).parent.parent/'wsdl',
                  encrypt=True, adjust_time=False, transport=None):
         environ.pop('http_proxy', None)
         environ.pop('https_proxy', None)
@@ -191,7 +192,7 @@ class ONVIFCamera:
         self.port = int(port)
         self.user = user
         self.passwd = passwd
-        self.wsdl_dir = wsdl_dir
+        self.wsdlDir = wsdlDir
         self.encrypt = encrypt
         self.adjust_time = adjust_time
         self.transport = transport
@@ -262,21 +263,22 @@ class ONVIFCamera:
         return service
     
     def get_definition(self, name, portType=None):
-        """Returns xaddr and wsdl of specified service"""
+        """Returns xaddr and wsdl of specified service
+        """
         # Check if the service is supported
         if name not in SERVICES:
             raise ONVIFError('Unknown service %s' % name)
-        wsdl_file = SERVICES[name]['wsdl']
+        wsdlFilename = SERVICES[name]['wsdl']
         ns = SERVICES[name]['ns']
         
-        binding_name = '{%s}%s' % (ns, SERVICES[name]['binding'])
+        bindingName = '{%s}%s' % (ns, SERVICES[name]['binding'])
         
         if portType:
             ns += '/' + portType
         
-        wsdlpath = path.join(self.wsdl_dir, wsdl_file)
-        if not path.isfile(wsdlpath):
-            raise ONVIFError('No such file: %s' % wsdlpath)
+        wsdlPath = self.wsdlDir/wsdlFilename
+        if not wsdlPath.is_file():
+            raise ONVIFError('No such file: %s' % wsdlPath)
         
         # XAddr for devicemgmt is fixed:
         if name == 'devicemgmt':
@@ -284,14 +286,14 @@ class ONVIFCamera:
             if not (xaddr.startswith('http://') or xaddr.startswith('https://')):
                 xaddr = 'http://%s' % xaddr
             xaddr = '%s:%s/onvif/device_service' % (xaddr, self.port)
-            return xaddr, wsdlpath, binding_name
+            return xaddr, wsdlPath, bindingName
         
         # Get other XAddr
         xaddr = self.xaddrs.get(ns)
         if not xaddr:
             raise ONVIFError("Device doesn't support service: %s" % name)
         
-        return xaddr, wsdlpath, binding_name
+        return xaddr, wsdlPath, bindingName
 
     def createService(self, name, portType=None, transport=None):
         """
