@@ -128,7 +128,8 @@ class ONVIFService:
         # Convert a WSDL Type instance into a dictionary
         return {} if zeepobject is None else zeep.helpers.serialize_object(zeepobject)
     
-    def service_wrapper(self, func):
+    @classmethod
+    def service_wrapper(cls, func):
         @safeFunc
         def wrapped(params=None):
             def call(params=None):
@@ -137,7 +138,7 @@ class ONVIFService:
                 if params is None:
                     params = {}
                 else:
-                    params = ONVIFService.to_dict(params)
+                    params = cls.to_dict(params)
                 try:
                     ret = func(**params)
                 except TypeError:
@@ -203,7 +204,7 @@ class ONVIFCamera:
         self.services = {}
         self.services_lock = RLock()
     
-    to_dict = ONVIFService.to_dict
+    toDict = ONVIFService.to_dict
     
     async def update_xaddrs(self):
         # Establish devicemgmt service first
