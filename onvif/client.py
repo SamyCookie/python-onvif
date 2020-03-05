@@ -111,13 +111,6 @@ class ONVIFService:
         ns = list(availableNs.keys())[list(availableNs.values()).index(namespace)]
         return client.get_element((ns or 'ns0') + ':' + name)()
     
-    @classmethod
-    @safeFunc
-    def clone(cls, service, *args, **kwargs):
-        clone_service = service.wsClient.clone()
-        kwargs['wsClient'] = clone_service
-        return ONVIFService(*args, **kwargs)
-    
     @staticmethod
     @safeFunc
     def to_dict(zeepobject):
