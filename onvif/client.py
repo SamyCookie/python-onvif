@@ -99,9 +99,9 @@ class ONVIFService:
         settings = Settings()
         settings.strict = False
         settings.xml_huge_tree = True
-        self.zeep_client = zeep_client = \
+        self.client = client = \
             Client(wsdl=str(url), wsse=wsse, transport=transport, settings=settings)
-        self.ws_client = zeep_client.create_service(binding_name, self.xaddr)
+        self.ws_client = client.create_service(binding_name, self.xaddr)
         
         # Set soap header for authentication
         self.user = user
@@ -111,9 +111,9 @@ class ONVIFService:
         self.dt_diff = dt_diff
         
         namespace = binding_name[binding_name.find('{')+1:binding_name.find('}')]
-        available_ns = zeep_client.namespaces
+        available_ns = client.namespaces
         ns = list(available_ns.keys())[list(available_ns.values()).index(namespace)] or 'ns0'
-        self.create_type = lambda x: zeep_client.get_element(ns + ':' + x)()
+        self.create_type = lambda x: client.get_element(ns + ':' + x)()
     
     @classmethod
     @safeFunc
