@@ -82,8 +82,7 @@ class ONVIFService:
         device_service.SetHostname(params)
     """
     @safe_func
-    def __init__(self, xaddr, user, passwd, url,
-                 encrypt=True, zeep_client=None, portType=None,
+    def __init__(self, xaddr, user, passwd, url, *, encrypt=True, portType=None,
                  dt_diff=None, binding_name='', transport=None):
         if not path.isfile(url):
             raise ONVIFError('%s doesn`t exist!' % url)
@@ -92,16 +91,14 @@ class ONVIFService:
         self.xaddr = xaddr
         wsse = UsernameDigestTokenDtDiff(user, passwd, dt_diff=dt_diff, use_digest=encrypt)
         # Create soap client
-        if not zeep_client:
-            if not transport:
-                transport = AsyncTransport(None)
-            settings = Settings()
-            settings.strict = False
-            settings.xml_huge_tree = True
-            self.zeep_client = Client(wsdl=url, wsse=wsse, transport=transport, settings=settings)
-        else:
-            self.zeep_client = zeep_client
-        self.ws_client = self.zeep_client.create_service(binding_name, self.xaddr)
+        if not transport:
+            transport = AsyncTransport(None)
+        settings = Settings()
+        settings.strict = False
+        settings.xml_huge_tree = True
+        self.zeep_client = zeep_client = \
+            Client(wsdl=url, wsse=wsse, transport=transport, settings=settings)
+        self.ws_client = zeep_client.create_service(binding_name, self.xaddr)
         
         # Set soap header for authentication
         self.user = user
@@ -111,9 +108,9 @@ class ONVIFService:
         self.dt_diff = dt_diff
         
         namespace = binding_name[binding_name.find('{')+1:binding_name.find('}')]
-        available_ns = self.zeep_client.namespaces
+        available_ns = zeep_client.namespaces
         ns = list(available_ns.keys())[list(available_ns.values()).index(namespace)] or 'ns0'
-        self.create_type = lambda x: self.zeep_client.get_element(ns + ':' + x)()
+        self.create_type = lambda x: zeep_client.get_element(ns + ':' + x)()
     
     @classmethod
     @safe_func
@@ -309,8 +306,8 @@ class ONVIFCamera:
         with self.services_lock:
             if not transport:
                 transport = self.transport
-            service = ONVIFService(xaddr, self.user, self.passwd,
-                                   wsdlFile, self.encrypt,
+            service = ONVIFService(xaddr, self.user, self.passwd, wsdlFile,
+                                   encrypt=self.encrypt,
                                    portType=portType,
                                    dt_diff=self.dt_diff,
                                    binding_name=bindingName,
