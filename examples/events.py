@@ -11,7 +11,7 @@ async def run():
     properties = await event_service.GetEventProperties()
     print(properties)
     
-    pullpoint = mycam.createService('pullpoint', portType='PullPointSubscription')
+    pullpoint = mycam.createService('pullpoint')
     req = pullpoint.create_type('PullMessages')
     req.MessageLimit=100
     req.Timeout = 30

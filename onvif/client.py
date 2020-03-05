@@ -262,16 +262,16 @@ class ONVIFCamera:
             return self.createService(name.lower())
         return service
     
-    def get_definition(self, name, portType=None):
+    def get_definition(self, name):
         """Returns xaddr and wsdl of specified service
         """
         serviceInfo = SERVICES.get(name)
         if serviceInfo is None:
             raise ONVIFError('Unknown service %s' % name)
         
-        ns, wsdlFilename, binding = serviceInfo
+        ns, wsdlFilename, binding, portType = serviceInfo
         bindingName = '{%s}%s' % (ns, binding)
-        if portType:
+        if portType is not None:
             ns += '/' + portType
         
         # XAddr for devicemgmt is fixed:
@@ -289,7 +289,7 @@ class ONVIFCamera:
         
         return xaddr, wsdlFilename, bindingName
 
-    def createService(self, name, portType=None, transport=None):
+    def createService(self, name, transport=None):
         """
         Create ONVIF service client.
 
@@ -300,7 +300,7 @@ class ONVIFCamera:
         :return:
         """
         name = name.lower()
-        xaddr, wsdlFilename, bindingName = self.get_definition(name, portType)
+        xaddr, wsdlFilename, bindingName = self.get_definition(name)
         with self.services_lock:
             if not transport:
                 transport = self.transport
