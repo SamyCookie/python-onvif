@@ -84,8 +84,8 @@ class ONVIFService:
         device_service.SetHostname(params)
     """
     @safeFunc
-    def __init__(self, xaddr, user, passwd, url, *, encrypt=True, portType=None,
-                 dt_diff=None, binding_name='', transport=None):
+    def __init__(self, xaddr, user, passwd, url, *,
+                 encrypt=True, dt_diff=None, binding_name='', transport=None):
         if not path.isfile(url):
             raise ONVIFError('%s doesn`t exist!' % url)
         
@@ -310,7 +310,6 @@ class ONVIFCamera:
                 transport = self.transport
             service = ONVIFService(xaddr, self.user, self.passwd, wsdlFile,
                                    encrypt=self.encrypt,
-                                   portType=portType,
                                    dt_diff=self.dt_diff,
                                    binding_name=bindingName,
                                    transport=transport)
