@@ -202,8 +202,8 @@ class ONVIFCamera:
         # Active service client container
         self.services = {}
         self.services_lock = RLock()
-        
-        self.to_dict = ONVIFService.to_dict
+    
+    to_dict = ONVIFService.to_dict
     
     async def update_xaddrs(self):
         # Establish devicemgmt service first
