@@ -276,24 +276,20 @@ class ONVIFCamera:
         if portType:
             ns += '/' + portType
         
-        wsdlPath = self.wsdlDir/wsdlFilename
-        if not wsdlPath.is_file():
-            raise ONVIFError('No such file: %s' % wsdlPath)
-        
         # XAddr for devicemgmt is fixed:
         if name == 'devicemgmt':
             xaddr = self.host
             if not (xaddr.startswith('http://') or xaddr.startswith('https://')):
                 xaddr = 'http://%s' % xaddr
             xaddr = '%s:%s/onvif/device_service' % (xaddr, self.port)
-            return xaddr, wsdlPath, bindingName
+            return xaddr, wsdlFilename, bindingName
         
         # Get other XAddr
         xaddr = self.xaddrs.get(ns)
         if not xaddr:
             raise ONVIFError("Device doesn't support service: %s" % name)
         
-        return xaddr, wsdlPath, bindingName
+        return xaddr, wsdlFilename, bindingName
 
     def createService(self, name, portType=None, transport=None):
         """
@@ -306,11 +302,12 @@ class ONVIFCamera:
         :return:
         """
         name = name.lower()
-        xaddr, wsdlFile, bindingName = self.get_definition(name, portType)
+        xaddr, wsdlFilename, bindingName = self.get_definition(name, portType)
         with self.services_lock:
             if not transport:
                 transport = self.transport
-            service = ONVIFService(xaddr, self.user, self.passwd, wsdlFile,
+            service = ONVIFService(xaddr, self.user, self.passwd,
+                                   self.wsdlDir/wsdlFilename,
                                    encrypt=self.encrypt,
                                    dt_diff=self.dt_diff,
                                    binding_name=bindingName,
