@@ -195,26 +195,26 @@ class ONVIFCamera:
         self.passwd = passwd
         self.wsdlDir = wsdlDir
         self.encrypt = encrypt
-        self.adjust_time = adjust_time
+        self.adjustTime = adjust_time
         self.transport = transport
-        self.dt_diff = None
+        self.dtDiff = None
         self.xaddrs = { }
         
         # Active service client container
         self.services = {}
-        self.services_lock = RLock()
+        self.servicesLock = RLock()
     
     toDict = ONVIFService.to_dict
     
     async def update_xaddrs(self):
         # Establish devicemgmt service first
-        self.dt_diff = None
+        self.dtDiff = None
         devicemgmt = self.getService('devicemgmt')
-        if self.adjust_time:
+        if self.adjustTime:
             cdate = await devicemgmt.GetSystemDateAndTime().UTCDateTime
             camDate = datetime(cdate.Date.Year, cdate.Date.Month, cdate.Date.Day,
                                cdate.Time.Hour, cdate.Time.Minute, cdate.Time.Second)
-            self.dt_diff = camDate - datetime.utcnow()
+            self.dtDiff = camDate - datetime.utcnow()
             devicemgmt = self.createService('devicemgmt')
         # Get XAddr of services on the device
         self.xaddrs = {}
@@ -228,7 +228,7 @@ class ONVIFCamera:
             except Exception:
                 logger.exception('Unexpected service type')
         
-        with self.services_lock:
+        with self.servicesLock:
             try:
                 events = self.getService('events')
                 pullpoint = await events.CreatePullPointSubscription()
@@ -252,7 +252,7 @@ class ONVIFCamera:
         devicemgmt = self.getService('devicemgmt')
         capabilities = await devicemgmt.GetCapabilities()
         
-        with self.services_lock:
+        with self.servicesLock:
             for sname, service in self.services.items():
                 xaddr = getattr(capabilities, sname).XAddr
                 await service.ws_client.set_options(location=xaddr)
@@ -306,14 +306,14 @@ class ONVIFCamera:
         """
         name = name.lower()
         xaddr, wsdlFilename, bindingName = self.getDefinition(name)
-        with self.services_lock:
+        with self.servicesLock:
             if not transport:
                 transport = self.transport
             self.services[name] = service = \
                 ONVIFService(xaddr, self.user, self.passwd,
                              self.wsdlDir/wsdlFilename,
                              encrypt=self.encrypt,
-                             dt_diff=self.dt_diff,
+                             dt_diff=self.dtDiff,
                              binding_name=bindingName,
                              transport=transport)
         return service
