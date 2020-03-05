@@ -208,16 +208,16 @@ class ONVIFCamera:
     async def update_xaddrs(self):
         # Establish devicemgmt service first
         self.dt_diff = None
-        self.devicemgmt = self.createService('devicemgmt')
+        devicemgmt = self.getService('devicemgmt')
         if self.adjust_time:
-            cdate = await self.devicemgmt.GetSystemDateAndTime().UTCDateTime
-            cam_date = datetime(cdate.Date.Year, cdate.Date.Month, cdate.Date.Day,
-                                   cdate.Time.Hour, cdate.Time.Minute, cdate.Time.Second)
-            self.dt_diff = cam_date - datetime.utcnow()
-            self.devicemgmt = self.createService('devicemgmt')
+            cdate = await devicemgmt.GetSystemDateAndTime().UTCDateTime
+            camDate = datetime(cdate.Date.Year, cdate.Date.Month, cdate.Date.Day,
+                               cdate.Time.Hour, cdate.Time.Minute, cdate.Time.Second)
+            self.dt_diff = camDate - datetime.utcnow()
+            devicemgmt = self.createService('devicemgmt')
         # Get XAddr of services on the device
         self.xaddrs = {}
-        capabilities = await self.devicemgmt.GetCapabilities({'Category': 'All'})
+        capabilities = await devicemgmt.GetCapabilities({'Category': 'All'})
         for name in capabilities:
             capability = capabilities[name]
             try:
@@ -229,10 +229,10 @@ class ONVIFCamera:
         
         with self.services_lock:
             try:
-                self.event = self.createService('events')
-                pullpoint = await self.event.CreatePullPointSubscription()
+                events = self.getService('events')
+                pullpoint = await events.CreatePullPointSubscription()
                 self.xaddrs[self.PullPointSubscription] = \
-                    pullpoint.SubscriptionReference.Address._value_1
+                    pullpoint.SubscriptionReference.Address._value_1  #pylint: disable=protected-access
             except Exception:
                 pass
 
@@ -248,18 +248,24 @@ class ONVIFCamera:
         if not changed:
             return
         
-        self.devicemgmt = self.createService('devicemgmt')
-        self.capabilities = await self.devicemgmt.GetCapabilities()
+        devicemgmt = self.getService('devicemgmt')
+        capabilities = await devicemgmt.GetCapabilities()
         
         with self.services_lock:
             for sname, service in self.services.items():
-                xaddr = getattr(self.capabilities, sname).XAddr
+                xaddr = getattr(capabilities, sname).XAddr
                 await service.ws_client.set_options(location=xaddr)
     
-    def get_service(self, name, create=True):
-        service = getattr(self, name.lower(), None)
-        if not service and create:
-            return self.createService(name.lower())
+    def getService(self, name, create=True):
+        """ get (and maybe created) service from cache
+        """
+        name = name.lower()
+        try:
+            service = self.services[name]
+        except KeyError:
+            if not create:
+                raise ONVIFError("service '%s' has not been created" % name)
+            service = self.createService(name)
         return service
     
     def getDefinition(self, name):
@@ -302,12 +308,11 @@ class ONVIFCamera:
         with self.services_lock:
             if not transport:
                 transport = self.transport
-            service = ONVIFService(xaddr, self.user, self.passwd,
-                                   self.wsdlDir/wsdlFilename,
-                                   encrypt=self.encrypt,
-                                   dt_diff=self.dt_diff,
-                                   binding_name=bindingName,
-                                   transport=transport)
-            self.services[name] = service
-            setattr(self, name, service)
+            self.services[name] = service = \
+                ONVIFService(xaddr, self.user, self.passwd,
+                             self.wsdlDir/wsdlFilename,
+                             encrypt=self.encrypt,
+                             dt_diff=self.dt_diff,
+                             binding_name=bindingName,
+                             transport=transport)
         return service
