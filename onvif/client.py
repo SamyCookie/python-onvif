@@ -94,15 +94,11 @@ class ONVIFService:
         self.xaddr = xaddr
         wsse = UsernameDigestTokenDtDiff(user, passwd,
                                          dt_diff=dt_diff, use_digest=encrypt)
-        # Create soap client
         if not transport:
             transport = AsyncTransport(None)
-        settings = Settings()
-        settings.strict = False
-        settings.xml_huge_tree = True
-        self.client = client = \
-            Client(wsdl=str(url), wsse=wsse, transport=transport, settings=settings)
-        self.wsClient = client.create_service(binding_name, self.xaddr)
+        self.client = Client(wsdl=str(url), wsse=wsse, transport=transport,
+                             settings=Settings(strict=False, xml_huge_tree=True))
+        self.wsClient = self.client.create_service(binding_name, xaddr)
         self.bindingName = binding_name
     
     def createType(self, name):
