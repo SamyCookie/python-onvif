@@ -1,13 +1,9 @@
-from __future__ import print_function, division
-__version__ = '0.0.1'
+""" ONVIF API
+"""
+import logging
 from datetime import datetime
 from os import environ, path
 from threading import RLock
-
-import logging
-logger = logging.getLogger('onvif')
-logging.basicConfig(level=logging.INFO)
-logging.getLogger('zeep.client').setLevel(logging.CRITICAL)
 
 from zeep.asyncio import AsyncTransport
 from zeep.cache import SqliteCache
@@ -15,8 +11,8 @@ from zeep.client import Client, CachingClient, Settings
 from zeep.wsse.username import UsernameToken
 import zeep.helpers
 
-from onvif.exceptions import ONVIFError
-from onvif.definition import SERVICES
+from .exceptions import ONVIFError
+from .definition import SERVICES
 
 logger = logging.getLogger('onvif')
 logging.basicConfig(level=logging.INFO)
