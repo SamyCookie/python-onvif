@@ -102,6 +102,7 @@ class ONVIFService:
         self.client = client = \
             Client(wsdl=str(url), wsse=wsse, transport=transport, settings=settings)
         self.ws_client = client.create_service(binding_name, self.xaddr)
+        self.bindingName = binding_name
         
         # Set soap header for authentication
         self.user = user
@@ -110,10 +111,16 @@ class ONVIFService:
         self.encrypt = encrypt
         self.dt_diff = dt_diff
         
-        namespace = binding_name[binding_name.find('{')+1:binding_name.find('}')]
-        available_ns = client.namespaces
-        ns = list(available_ns.keys())[list(available_ns.values()).index(namespace)] or 'ns0'
-        self.create_type = lambda x: client.get_element(ns + ':' + x)()
+        
+    def createType(self, name):
+        """ create type
+        """
+        bindingName = self.binding_name
+        namespace = bindingName[bindingName.find('{')+1:bindingName.find('}')]
+        client = self.client
+        availableNs = client.namespaces
+        ns = list(availableNs.keys())[list(availableNs.values()).index(namespace)]
+        return client.get_element((ns or 'ns0') + ':' + name)()
     
     @classmethod
     @safeFunc
