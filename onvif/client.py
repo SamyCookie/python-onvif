@@ -1,10 +1,16 @@
 from __future__ import print_function, division
 __version__ = '0.0.1'
-import datetime as dt
-import logging
-import os.path
-from threading import Thread, RLock
+from datetime import datetime
+from os import environ, path
+from threading import RLock
 
+import logging
+logger = logging.getLogger('onvif')
+logging.basicConfig(level=logging.INFO)
+logging.getLogger('zeep.client').setLevel(logging.CRITICAL)
+
+from zeep.asyncio import AsyncTransport
+from zeep.cache import SqliteCache
 from zeep.client import Client, CachingClient, Settings
 from zeep.wsse.username import UsernameToken
 import zeep.helpers
@@ -42,7 +48,7 @@ class UsernameDigestTokenDtDiff(UsernameToken):
     def apply(self, envelope, headers):
         old_created = self.created
         if self.created is None:
-            self.created = dt.datetime.utcnow()
+            self.created = datetime.utcnow()
         if self.dt_diff is not None:
             self.created += self.dt_diff
         result = super().apply(envelope, headers)
@@ -83,9 +89,9 @@ class ONVIFService(object):
 
     @safe_func
     def __init__(self, xaddr, user, passwd, url,
-                 encrypt=True, daemon=False, zeep_client=None, no_cache=False,
-                 dt_diff=None, binding_name='', transport=None):
-        if not os.path.isfile(url):
+                 encrypt=True, zeep_client=None, no_cache=False,
+                 portType=None, dt_diff=None, binding_name='', transport=None):
+        if not path.isfile(url):
             raise ONVIFError('%s doesn`t exist!' % url)
 
         self.url = url
@@ -93,6 +99,8 @@ class ONVIFService(object):
         wsse = UsernameDigestTokenDtDiff(user, passwd, dt_diff=dt_diff, use_digest=encrypt)
         # Create soap client
         if not zeep_client:
+            if not transport:
+                transport = AsyncTransport(None) if no_cache else AsyncTransport(None, cache=SqliteCache())
             ClientType = Client if no_cache else CachingClient
             settings = Settings()
             settings.strict = False
@@ -107,9 +115,12 @@ class ONVIFService(object):
         self.passwd = passwd
         # Indicate wether password digest is needed
         self.encrypt = encrypt
-        self.daemon = daemon
         self.dt_diff = dt_diff
-        self.create_type = lambda x: self.zeep_client.get_element('ns0:' + x)()
+        
+        namespace = binding_name[binding_name.find('{')+1:binding_name.find('}')]
+        available_ns = self.zeep_client.namespaces
+        ns = list(available_ns.keys())[list(available_ns.values()).index(namespace)] or 'ns0'
+        self.create_type = lambda x: self.zeep_client.get_element(ns + ':' + x)()
 
     @classmethod
     @safe_func
@@ -126,8 +137,8 @@ class ONVIFService(object):
 
     def service_wrapper(self, func):
         @safe_func
-        def wrapped(params=None, callback=None):
-            def call(params=None, callback=None):
+        def wrapped(params=None):
+            def call(params=None):
                 # No params
                 # print(params.__class__.__mro__)
                 if params is None:
@@ -138,16 +149,9 @@ class ONVIFService(object):
                     ret = func(**params)
                 except TypeError:
                     ret = func(params)
-                if callable(callback):
-                    callback(ret)
                 return ret
 
-            if self.daemon:
-                th = Thread(target=call, args=(params, callback))
-                th.daemon = True
-                th.start()
-            else:
-                return call(params, callback)
+            return call(params)
         return wrapped
 
     def __getattr__(self, name):
@@ -188,48 +192,44 @@ class ONVIFCamera(object):
                          'imaging': None, 'events': None, 'analytics': None}
     use_services_template = {'devicemgmt': True, 'ptz': True, 'media': True,
                              'imaging': True, 'events': True, 'analytics': True}
-
+    
     def __init__(self, host, port, user, passwd,
-                 wsdl_dir=os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                       "wsdl"),
-                 encrypt=True, daemon=False, no_cache=False, adjust_time=False,
-                 transport=None):
-        os.environ.pop('http_proxy', None)
-        os.environ.pop('https_proxy', None)
+                 wsdl_dir=path.join(path.dirname(path.dirname(__file__)), 'wsdl'),
+                 encrypt=True, no_cache=False, adjust_time=False, transport=None):
+        environ.pop('http_proxy', None)
+        environ.pop('https_proxy', None)
         self.host = host
         self.port = int(port)
         self.user = user
         self.passwd = passwd
         self.wsdl_dir = wsdl_dir
         self.encrypt = encrypt
-        self.daemon = daemon
         self.no_cache = no_cache
         self.adjust_time = adjust_time
         self.transport = transport
+        self.dt_diff = None
+        self.xaddrs = { }
 
         # Active service client container
         self.services = {}
         self.services_lock = RLock()
 
-        # Set xaddrs
-        self.update_xaddrs()
-
         self.to_dict = ONVIFService.to_dict
 
-    def update_xaddrs(self):
+    async def update_xaddrs(self):
         # Establish devicemgmt service first
         self.dt_diff = None
         self.devicemgmt = self.create_devicemgmt_service()
         if self.adjust_time:
-            cdate = self.devicemgmt.GetSystemDateAndTime().UTCDateTime
-            cam_date = dt.datetime(cdate.Date.Year, cdate.Date.Month, cdate.Date.Day,
+            cdate = await self.devicemgmt.GetSystemDateAndTime().UTCDateTime
+            cam_date = datetime(cdate.Date.Year, cdate.Date.Month, cdate.Date.Day,
                                    cdate.Time.Hour, cdate.Time.Minute, cdate.Time.Second)
-            self.dt_diff = cam_date - dt.datetime.utcnow()
+            self.dt_diff = cam_date - datetime.utcnow()
             self.devicemgmt.dt_diff = self.dt_diff
             self.devicemgmt = self.create_devicemgmt_service()
         # Get XAddr of services on the device
         self.xaddrs = {}
-        capabilities = self.devicemgmt.GetCapabilities({'Category': 'All'})
+        capabilities = await self.devicemgmt.GetCapabilities({'Category': 'All'})
         for name in capabilities:
             capability = capabilities[name]
             try:
@@ -242,12 +242,13 @@ class ONVIFCamera(object):
         with self.services_lock:
             try:
                 self.event = self.create_events_service()
+                pullpoint = await self.event.CreatePullPointSubscription()
                 self.xaddrs['http://www.onvif.org/ver10/events/wsdl/PullPointSubscription'] = \
-                    self.event.CreatePullPointSubscription().SubscriptionReference.Address._value_1
+                    pullpoint.SubscriptionReference.Address._value_1
             except Exception:
                 pass
 
-    def update_url(self, host=None, port=None):
+    async def update_url(self, host=None, port=None):
         changed = False
         if host and self.host != host:
             changed = True
@@ -260,12 +261,12 @@ class ONVIFCamera(object):
             return
 
         self.devicemgmt = self.create_devicemgmt_service()
-        self.capabilities = self.devicemgmt.GetCapabilities()
+        self.capabilities = await self.devicemgmt.GetCapabilities()
 
         with self.services_lock:
             for sname in self.services.keys():
                 xaddr = getattr(self.capabilities, sname.capitalize).XAddr
-                self.services[sname].ws_client.set_options(location=xaddr)
+                await self.services[sname].ws_client.set_options(location=xaddr)
 
     def get_service(self, name, create=True):
         service = getattr(self, name.lower(), None)
@@ -286,8 +287,8 @@ class ONVIFCamera(object):
         if portType:
             ns += '/' + portType
 
-        wsdlpath = os.path.join(self.wsdl_dir, wsdl_file)
-        if not os.path.isfile(wsdlpath):
+        wsdlpath = path.join(self.wsdl_dir, wsdl_file)
+        if not path.isfile(wsdlpath):
             raise ONVIFError('No such file: %s' % wsdlpath)
 
         # XAddr for devicemgmt is fixed:
@@ -325,7 +326,8 @@ class ONVIFCamera(object):
 
             service = ONVIFService(xaddr, self.user, self.passwd,
                                    wsdl_file, self.encrypt,
-                                   self.daemon, no_cache=self.no_cache,
+                                   no_cache=self.no_cache,
+                                   portType=portType,
                                    dt_diff=self.dt_diff,
                                    binding_name=binding_name,
                                    transport=transport)
