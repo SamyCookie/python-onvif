@@ -221,9 +221,9 @@ class ONVIFCamera:
         for name in capabilities:
             capability = capabilities[name]
             try:
-                if name.lower() in SERVICES and capability is not None:
-                    ns = SERVICES[name.lower()]['ns']
-                    self.xaddrs[ns] = capability['XAddr']
+                serviceInfo = SERVICES.get(name.lower())
+                if serviceInfo is not None and capability is not None:
+                    self.xaddrs[serviceInfo.ns] = capability['XAddr']
             except Exception:
                 logger.exception('Unexpected service type')
         
@@ -265,14 +265,12 @@ class ONVIFCamera:
     def get_definition(self, name, portType=None):
         """Returns xaddr and wsdl of specified service
         """
-        # Check if the service is supported
-        if name not in SERVICES:
+        serviceInfo = SERVICES.get(name)
+        if serviceInfo is None:
             raise ONVIFError('Unknown service %s' % name)
-        wsdlFilename = SERVICES[name]['wsdl']
-        ns = SERVICES[name]['ns']
         
-        bindingName = '{%s}%s' % (ns, SERVICES[name]['binding'])
-        
+        ns, wsdlFilename, binding = serviceInfo
+        bindingName = '{%s}%s' % (ns, binding)
         if portType:
             ns += '/' + portType
         

@@ -1,22 +1,27 @@
-SERVICES = {
-        # Name                              namespace                           wsdl file                      binding name
-        'devicemgmt'   : {'ns': 'http://www.onvif.org/ver10/device/wsdl',    'wsdl': 'devicemgmt.wsdl', 'binding' : 'DeviceBinding'},
-        'media'        : {'ns': 'http://www.onvif.org/ver10/media/wsdl',     'wsdl': 'media.wsdl',      'binding' : 'MediaBinding'},
-        'ptz'          : {'ns': 'http://www.onvif.org/ver20/ptz/wsdl',       'wsdl': 'ptz.wsdl',        'binding' : 'PTZBinding'},
-        'imaging'      : {'ns': 'http://www.onvif.org/ver20/imaging/wsdl',   'wsdl': 'imaging.wsdl',    'binding' : 'ImagingBinding'},
-        'deviceio'     : {'ns': 'http://www.onvif.org/ver10/deviceIO/wsdl',  'wsdl': 'deviceio.wsdl',   'binding' : 'DeviceIOBinding'},
-        'events'       : {'ns': 'http://www.onvif.org/ver10/events/wsdl',    'wsdl': 'events.wsdl',     'binding' : 'EventBinding'},
-        'pullpoint'    : {'ns': 'http://www.onvif.org/ver10/events/wsdl',    'wsdl': 'events.wsdl',     'binding' : 'PullPointSubscriptionBinding'},
-        'notification' : {'ns': 'http://www.onvif.org/ver10/events/wsdl',    'wsdl': 'events.wsdl',     'binding' : 'NotificationProducerBinding'},
-        'subscription' : {'ns': 'http://www.onvif.org/ver10/events/wsdl',    'wsdl': 'events.wsdl',     'binding' : 'SubscriptionManagerBinding'},
-        'analytics'    : {'ns': 'http://www.onvif.org/ver20/analytics/wsdl', 'wsdl': 'analytics.wsdl',  'binding' : 'AnalyticsEngineBinding'},
-        'recording'    : {'ns': 'http://www.onvif.org/ver10/recording/wsdl', 'wsdl': 'recording.wsdl',  'binding' : 'RecordingBinding'},
-        'search'       : {'ns': 'http://www.onvif.org/ver10/search/wsdl',    'wsdl': 'search.wsdl',     'binding' : 'SearchBinding'},
-        'replay'       : {'ns': 'http://www.onvif.org/ver10/replay/wsdl',    'wsdl': 'replay.wsdl',     'binding' : 'ReplayBinding'},
-        'receiver'     : {'ns': 'http://www.onvif.org/ver10/receiver/wsdl',  'wsdl': 'receiver.wsdl',   'binding' : 'ReceiverBinding'},
-        }
+""" definition file
+"""
+from collections import namedtuple
 
-#
-#NSMAP = { }
-#for name, item in SERVICES.items():
-#    NSMAP[item['ns']] = name
+NS = 'http://www.onvif.org/'
+SI = namedtuple('ServiceInfo', ('ns', 'wsdl', 'binding'))
+
+SERVICES = {
+    'devicemgmt'   : SI(NS+'ver10/device/wsdl', 'devicemgmt.wsdl', 'DeviceBinding'),
+    'media'        : SI(NS+'ver10/media/wsdl',     'media.wsdl',     'MediaBinding'),
+    'ptz'          : SI(NS+'ver20/ptz/wsdl',       'ptz.wsdl',       'PTZBinding'),
+    'imaging'      : SI(NS+'ver20/imaging/wsdl',   'imaging.wsdl',   'ImagingBinding'),
+    'deviceio'     : SI(NS+'ver10/deviceIO/wsdl',  'deviceio.wsdl',  'DeviceIOBinding'),
+    'events'       : SI(NS+'ver10/events/wsdl',    'events.wsdl',    'EventBinding'),
+    'pullpoint'    : SI(NS+'ver10/events/wsdl',    'events.wsdl',
+                        'PullPointSubscriptionBinding'),
+    'notification' : SI(NS+'ver10/events/wsdl',    'events.wsdl',
+                        'NotificationProducerBinding'),
+    'subscription' : SI(NS+'ver10/events/wsdl',    'events.wsdl',
+                        'SubscriptionManagerBinding'),
+    'analytics'    : SI(NS+'ver20/analytics/wsdl', 'analytics.wsdl',
+                        'AnalyticsEngineBinding'),
+    'recording'    : SI(NS+'ver10/recording/wsdl', 'recording.wsdl', 'RecordingBinding'),
+    'search'       : SI(NS+'ver10/search/wsdl',    'search.wsdl',    'SearchBinding'),
+    'replay'       : SI(NS+'ver10/replay/wsdl',    'replay.wsdl',    'ReplayBinding'),
+    'receiver'     : SI(NS+'ver10/receiver/wsdl',  'receiver.wsdl',  'ReceiverBinding'),
+}
