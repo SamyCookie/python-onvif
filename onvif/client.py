@@ -20,7 +20,9 @@ logging.getLogger('zeep.client').setLevel(logging.CRITICAL)
 
 # Ensure methods to raise an ONVIFError Exception
 # when some thing was wrong
-def safe_func(func):
+def safeFunc(func):
+    """ wrap and transform exception
+    """
     def wrapped(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -81,7 +83,7 @@ class ONVIFService:
         params.Hostname = 'NewHostName'
         device_service.SetHostname(params)
     """
-    @safe_func
+    @safeFunc
     def __init__(self, xaddr, user, passwd, url, *, encrypt=True, portType=None,
                  dt_diff=None, binding_name='', transport=None):
         if not path.isfile(url):
@@ -113,20 +115,20 @@ class ONVIFService:
         self.create_type = lambda x: zeep_client.get_element(ns + ':' + x)()
     
     @classmethod
-    @safe_func
+    @safeFunc
     def clone(cls, service, *args, **kwargs):
         clone_service = service.ws_client.clone()
         kwargs['ws_client'] = clone_service
         return ONVIFService(*args, **kwargs)
     
     @staticmethod
-    @safe_func
+    @safeFunc
     def to_dict(zeepobject):
         # Convert a WSDL Type instance into a dictionary
         return {} if zeepobject is None else zeep.helpers.serialize_object(zeepobject)
     
     def service_wrapper(self, func):
-        @safe_func
+        @safeFunc
         def wrapped(params=None):
             def call(params=None):
                 # No params
