@@ -301,7 +301,7 @@ class ONVIFCamera(object):
 
         return xaddr, wsdlpath, binding_name
 
-    def create_onvif_service(self, name, portType=None, transport=None):
+    def createService(self, name, portType=None, transport=None):
         """
         Create ONVIF service client.
 
@@ -338,45 +338,45 @@ class ONVIFCamera(object):
 
     def create_devicemgmt_service(self, transport=None):
         # The entry point for devicemgmt service is fixed.
-        return self.create_onvif_service('devicemgmt', transport=transport)
+        return self.createService('devicemgmt', transport=transport)
 
     def create_media_service(self, transport=None):
-        return self.create_onvif_service('media', transport=transport)
+        return self.createService('media', transport=transport)
 
     def create_ptz_service(self, transport=None):
-        return self.create_onvif_service('ptz', transport=transport)
+        return self.createService('ptz', transport=transport)
 
     def create_imaging_service(self, transport=None):
-        return self.create_onvif_service('imaging', transport=transport)
+        return self.createService('imaging', transport=transport)
 
     def create_deviceio_service(self, transport=None):
-        return self.create_onvif_service('deviceio', transport=transport)
+        return self.createService('deviceio', transport=transport)
 
     def create_events_service(self, transport=None):
-        return self.create_onvif_service('events', transport=transport)
+        return self.createService('events', transport=transport)
 
     def create_analytics_service(self, transport=None):
-        return self.create_onvif_service('analytics', transport=transport)
+        return self.createService('analytics', transport=transport)
 
     def create_recording_service(self, transport=None):
-        return self.create_onvif_service('recording', transport=transport)
+        return self.createService('recording', transport=transport)
 
     def create_search_service(self, transport=None):
-        return self.create_onvif_service('search', transport=transport)
+        return self.createService('search', transport=transport)
 
     def create_replay_service(self, transport=None):
-        return self.create_onvif_service('replay', transport=transport)
+        return self.createService('replay', transport=transport)
 
     def create_pullpoint_service(self, transport=None):
-        return self.create_onvif_service('pullpoint',
+        return self.createService('pullpoint',
                                          portType='PullPointSubscription',
                                          transport=transport)
 
     def create_receiver_service(self, transport=None):
-        return self.create_onvif_service('receiver', transport=transport)
+        return self.createService('receiver', transport=transport)
 
     def create_notification_service(self, transport=None):
-        return self.create_onvif_service('notification', transport=transport)
+        return self.createService('notification', transport=transport)
 
     def create_subscription_service(self, transport=None):
-        return self.create_onvif_service('subscription', transport=transport)
+        return self.createService('subscription', transport=transport)
