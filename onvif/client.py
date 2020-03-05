@@ -262,7 +262,7 @@ class ONVIFCamera:
             return self.createService(name.lower())
         return service
     
-    def get_definition(self, name):
+    def getDefinition(self, name):
         """Returns xaddr and wsdl of specified service
         """
         serviceInfo = SERVICES.get(name)
@@ -280,13 +280,11 @@ class ONVIFCamera:
             if not (xaddr.startswith('http://') or xaddr.startswith('https://')):
                 xaddr = 'http://%s' % xaddr
             xaddr = '%s:%s/onvif/device_service' % (xaddr, self.port)
-            return xaddr, wsdlFilename, bindingName
-        
-        # Get other XAddr
-        xaddr = self.xaddrs.get(ns)
-        if not xaddr:
-            raise ONVIFError("Device doesn't support service: %s" % name)
-        
+        else:
+            # Get other XAddr
+            xaddr = self.xaddrs.get(ns)
+            if not xaddr:
+                raise ONVIFError("Device doesn't support service: %s" % name)
         return xaddr, wsdlFilename, bindingName
 
     def createService(self, name, transport=None):
@@ -300,7 +298,7 @@ class ONVIFCamera:
         :return:
         """
         name = name.lower()
-        xaddr, wsdlFilename, bindingName = self.get_definition(name)
+        xaddr, wsdlFilename, bindingName = self.getDefinition(name)
         with self.services_lock:
             if not transport:
                 transport = self.transport
