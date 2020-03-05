@@ -85,15 +85,14 @@ class ONVIFService:
         device_service.SetHostname(params)
     """
     @safeFunc
-    def __init__(self, xaddr, user, passwd, url: Path, *,
-                 encrypt=True, dt_diff=None, binding_name='', transport=None):
+    def __init__(self, xaddr, wsse: UsernameDigestTokenDtDiff, url: Path, *,
+                 binding_name='', transport=None):
         if not url.is_file():
             raise ONVIFError('%s doesn`t exist!' % url)
         
         self.url = url
         self.xaddr = xaddr
-        wsse = UsernameDigestTokenDtDiff(user, passwd,
-                                         dt_diff=dt_diff, use_digest=encrypt)
+        
         if not transport:
             transport = AsyncTransport(None)
         self.client = Client(wsdl=str(url), wsse=wsse, transport=transport,
@@ -186,24 +185,26 @@ class ONVIFCamera:
         self.encrypt = encrypt
         self.adjustTime = adjust_time
         self.transport = transport
-        self.dtDiff = None
         self.xaddrs = { }
+        self.wsse = None
         
         # Active service client container
         self.services = {}
         self.servicesLock = RLock()
+        
     
     toDict = ONVIFService.to_dict
     
     async def update_xaddrs(self):
         # Establish devicemgmt service first
-        self.dtDiff = None
         devicemgmt = self.getService('devicemgmt')
         if self.adjustTime:
             cdate = await devicemgmt.GetSystemDateAndTime().UTCDateTime
             camDate = datetime(cdate.Date.Year, cdate.Date.Month, cdate.Date.Day,
                                cdate.Time.Hour, cdate.Time.Minute, cdate.Time.Second)
-            self.dtDiff = camDate - datetime.utcnow()
+            dtDiff = camDate - datetime.utcnow()
+            self.wsse = UsernameDigestTokenDtDiff(self.user, self.passwd,
+                                                  dt_diff=dtDiff, use_digest=self.encrypt)
             devicemgmt = self.createService('devicemgmt')
         # Get XAddr of services on the device
         self.xaddrs = {}
@@ -299,10 +300,6 @@ class ONVIFCamera:
             if not transport:
                 transport = self.transport
             self.services[name] = service = \
-                ONVIFService(xaddr, self.user, self.passwd,
-                             self.wsdlDir/wsdlFilename,
-                             encrypt=self.encrypt,
-                             dt_diff=self.dtDiff,
-                             binding_name=bindingName,
-                             transport=transport)
+                ONVIFService(xaddr, self.wsse, self.wsdlDir/wsdlFilename,
+                             binding_name=bindingName, transport=transport)
         return service
