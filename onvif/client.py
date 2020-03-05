@@ -252,9 +252,9 @@ class ONVIFCamera:
         self.capabilities = await self.devicemgmt.GetCapabilities()
         
         with self.services_lock:
-            for sname in self.services.keys():
+            for sname, service in self.services.items():
                 xaddr = getattr(self.capabilities, sname.capitalize).XAddr
-                await self.services[sname].ws_client.set_options(location=xaddr)
+                await service.ws_client.set_options(location=xaddr)
     
     def get_service(self, name, create=True):
         service = getattr(self, name.lower(), None)
