@@ -76,11 +76,11 @@ async def setup_move():
     mycam = ONVIFCamera(IP, PORT, USER, PASS)
     await mycam.update_xaddrs()
     # Create media service object
-    media = mycam.create_media_service()
+    media = mycam.createService('media')
     
     # Create ptz service object
     global ptz
-    ptz = mycam.create_ptz_service()
+    ptz = mycam.createService('ptz')
 
     # Get target profile
     media_profile = await media.GetProfiles()[0]

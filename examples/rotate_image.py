@@ -7,7 +7,7 @@ async def rotate_image_180():
     # Create the media service
     mycam = ONVIFCamera('192.168.0.112', 80, 'admin', '12345')
     await mycam.update_xaddrs()
-    media_service = mycam.create_media_service()
+    media_service = mycam.createService('media')
 
     profiles = await media_service.GetProfiles()
 

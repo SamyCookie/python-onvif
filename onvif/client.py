@@ -177,8 +177,8 @@ class ONVIFCamera(object):
     >>> from onvif import ONVIFCamera
     >>> mycam = ONVIFCamera('192.168.0.112', 80, 'admin', '12345')
     >>> mycam.devicemgmt.GetServices(False)
-    >>> media_service = mycam.create_media_service()
-    >>> ptz_service = mycam.create_ptz_service()
+    >>> media_service = mycam.createService('media')
+    >>> ptz_service = mycam.create_service('ptz')
     # Get PTZ Configuration:
     >>> ptz_service.GetConfiguration()
     """
@@ -215,14 +215,14 @@ class ONVIFCamera(object):
     async def update_xaddrs(self):
         # Establish devicemgmt service first
         self.dt_diff = None
-        self.devicemgmt = self.create_devicemgmt_service()
+        self.devicemgmt = self.createService('devicemgmt')
         if self.adjust_time:
             cdate = await self.devicemgmt.GetSystemDateAndTime().UTCDateTime
             cam_date = datetime(cdate.Date.Year, cdate.Date.Month, cdate.Date.Day,
                                    cdate.Time.Hour, cdate.Time.Minute, cdate.Time.Second)
             self.dt_diff = cam_date - datetime.utcnow()
             self.devicemgmt.dt_diff = self.dt_diff
-            self.devicemgmt = self.create_devicemgmt_service()
+            self.devicemgmt = self.createService('devicemgmt')
         # Get XAddr of services on the device
         self.xaddrs = {}
         capabilities = await self.devicemgmt.GetCapabilities({'Category': 'All'})
@@ -237,7 +237,7 @@ class ONVIFCamera(object):
 
         with self.services_lock:
             try:
-                self.event = self.create_events_service()
+                self.event = self.createService('events')
                 pullpoint = await self.event.CreatePullPointSubscription()
                 self.xaddrs['http://www.onvif.org/ver10/events/wsdl/PullPointSubscription'] = \
                     pullpoint.SubscriptionReference.Address._value_1
@@ -256,7 +256,7 @@ class ONVIFCamera(object):
         if not changed:
             return
 
-        self.devicemgmt = self.create_devicemgmt_service()
+        self.devicemgmt = self.createService('devicemgmt')
         self.capabilities = await self.devicemgmt.GetCapabilities()
 
         with self.services_lock:
@@ -267,7 +267,7 @@ class ONVIFCamera(object):
     def get_service(self, name, create=True):
         service = getattr(self, name.lower(), None)
         if not service and create:
-            return getattr(self, 'create_%s_service' % name.lower())()
+            return self.createService(name.lower())
         return service
 
     def get_definition(self, name, portType=None):
@@ -335,48 +335,3 @@ class ONVIFCamera(object):
                 self.services_template[name] = service
 
         return service
-
-    def create_devicemgmt_service(self, transport=None):
-        # The entry point for devicemgmt service is fixed.
-        return self.createService('devicemgmt', transport=transport)
-
-    def create_media_service(self, transport=None):
-        return self.createService('media', transport=transport)
-
-    def create_ptz_service(self, transport=None):
-        return self.createService('ptz', transport=transport)
-
-    def create_imaging_service(self, transport=None):
-        return self.createService('imaging', transport=transport)
-
-    def create_deviceio_service(self, transport=None):
-        return self.createService('deviceio', transport=transport)
-
-    def create_events_service(self, transport=None):
-        return self.createService('events', transport=transport)
-
-    def create_analytics_service(self, transport=None):
-        return self.createService('analytics', transport=transport)
-
-    def create_recording_service(self, transport=None):
-        return self.createService('recording', transport=transport)
-
-    def create_search_service(self, transport=None):
-        return self.createService('search', transport=transport)
-
-    def create_replay_service(self, transport=None):
-        return self.createService('replay', transport=transport)
-
-    def create_pullpoint_service(self, transport=None):
-        return self.createService('pullpoint',
-                                         portType='PullPointSubscription',
-                                         transport=transport)
-
-    def create_receiver_service(self, transport=None):
-        return self.createService('receiver', transport=transport)
-
-    def create_notification_service(self, transport=None):
-        return self.createService('notification', transport=transport)
-
-    def create_subscription_service(self, transport=None):
-        return self.createService('subscription', transport=transport)
