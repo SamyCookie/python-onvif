@@ -92,7 +92,8 @@ class ONVIFService:
         
         self.url = url
         self.xaddr = xaddr
-        wsse = UsernameDigestTokenDtDiff(user, passwd, dt_diff=dt_diff, use_digest=encrypt)
+        wsse = UsernameDigestTokenDtDiff(user, passwd,
+                                         dt_diff=dt_diff, use_digest=encrypt)
         # Create soap client
         if not transport:
             transport = AsyncTransport(None)
@@ -101,7 +102,7 @@ class ONVIFService:
         settings.xml_huge_tree = True
         self.client = client = \
             Client(wsdl=str(url), wsse=wsse, transport=transport, settings=settings)
-        self.ws_client = client.create_service(binding_name, self.xaddr)
+        self.wsClient = client.create_service(binding_name, self.xaddr)
         self.bindingName = binding_name
     
     def createType(self, name):
@@ -117,8 +118,8 @@ class ONVIFService:
     @classmethod
     @safeFunc
     def clone(cls, service, *args, **kwargs):
-        clone_service = service.ws_client.clone()
-        kwargs['ws_client'] = clone_service
+        clone_service = service.wsClient.clone()
+        kwargs['wsClient'] = clone_service
         return ONVIFService(*args, **kwargs)
     
     @staticmethod
@@ -158,7 +159,7 @@ class ONVIFService:
         if builtin:
             return self.__dict__[name]
         else:
-            return self.service_wrapper(getattr(self.ws_client, name))
+            return self.service_wrapper(getattr(self.wsClient, name))
 
 
 class ONVIFCamera:
@@ -254,7 +255,7 @@ class ONVIFCamera:
         with self.servicesLock:
             for sname, service in self.services.items():
                 xaddr = getattr(capabilities, sname).XAddr
-                await service.ws_client.set_options(location=xaddr)
+                await service.wsClient.set_options(location=xaddr)
     
     def getService(self, name, create=True):
         """ get (and maybe created) service from cache
