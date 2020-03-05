@@ -182,13 +182,6 @@ class ONVIFCamera(object):
     # Get PTZ Configuration:
     >>> ptz_service.GetConfiguration()
     """
-
-    # Class-level variables
-    services_template = {'devicemgmt': None, 'ptz': None, 'media': None,
-                         'imaging': None, 'events': None, 'analytics': None}
-    use_services_template = {'devicemgmt': True, 'ptz': True, 'media': True,
-                             'imaging': True, 'events': True, 'analytics': True}
-    
     def __init__(self, host, port, user, passwd,
                  wsdl_dir=path.join(path.dirname(path.dirname(__file__)), 'wsdl'),
                  encrypt=True, no_cache=False, adjust_time=False, transport=None):
@@ -331,7 +324,5 @@ class ONVIFCamera(object):
             self.services[name] = service
 
             setattr(self, name, service)
-            if not self.services_template.get(name):
-                self.services_template[name] = service
 
         return service
