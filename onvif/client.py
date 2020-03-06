@@ -120,20 +120,15 @@ class ONVIFService:
     def service_wrapper(cls, func):
         @safeFunc
         def wrapped(params=None):
-            def call(params=None):
-                # No params
-                # print(params.__class__.__mro__)
-                if params is None:
-                    params = {}
-                else:
-                    params = cls.to_dict(params)
-                try:
-                    ret = func(**params)
-                except TypeError:
-                    ret = func(params)
-                return ret
-            
-            return call(params)
+            if params is None: # No params
+                params = {}
+            else:
+                params = cls.to_dict(params)
+            try:
+                ret = func(**params)
+            except TypeError:
+                ret = func(params)
+            return ret
         return wrapped
     
     def __getattr__(self, name):
