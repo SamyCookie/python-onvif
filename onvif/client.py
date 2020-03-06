@@ -120,10 +120,7 @@ class ONVIFService:
     def service_wrapper(cls, func):
         @safeFunc
         def wrapped(params=None):
-            if params is None: # No params
-                params = {}
-            else:
-                params = cls.to_dict(params)
+            params = {} if params is None else cls.to_dict(params)
             try:
                 ret = func(**params)
             except TypeError:
